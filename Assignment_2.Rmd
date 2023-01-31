@@ -1,0 +1,476 @@
+---
+title: "Individual Assignment 2"
+subtitle: "Seasonality, visualization, and logistic regression"
+author: "Your name here"
+date: "`r Sys.Date()`"
+output:
+  tufte::tufte_html: 
+    tufte_variant: "default"
+    self_contained: yes
+---
+
+```{r setup, include=FALSE}
+# setup is just a name for the section
+# include=FALSE specifies to not print this into the document
+library(tufte)
+```
+
+# General instructions
+
+**Before attempting the exercises, please read the following instructions carefully.**
+
+**This is an individual assignment. You may use class notes, internet and other references but you are not allowed to seek help from another person.**
+
+This assignment is intended to help you explore some of the concepts we have discussed in class:
+
+1. Forecasting using linear regression
+2. Seasonality in data
+3. Visualization using ggplot2
+4. Visualization using other tools
+5. Logistic regression
+
+This assignment is written as an R Markdown document. R Markdown allows for R code to be placed in the document, with the results likewise rendered directly into the document. The margin notes are part of the `tufte` library, and contain various tips and hints for the exercises[^1]. To get a feel for how this document type works, click the Knit bottom in the toolbar right above this editor window. If you have selected "Preview in window" from the settings dropdown (just right of knit), a window will pop up with the output of the document that refreshes each time you click knit. Alternatively, you can open the new html file that was created in the same folder as this file .Rmd file in your favorite web browser, and refresh that browser tab after knitting each time.
+
+Note that some of the code in the code blocks has already been filled in for you. As a consequence, code blocks are all set to `eval=FALSE` to start with, so that the document can be compiled before you finish all exercises.  As you get to an exercise, change `eval=FALSE` to `eval=TRUE` for its code blocks so that they are evaluated when knitting.
+
+The main tools you will be gaining familiarity with in this Assignment are:
+
+![](https://bookdown.org/yihui/rmarkdown/images/hex-rmarkdown.png){width=100px} ![](https://www.libraries.rutgers.edu/sites/default/files/styles/resize_to_300px_width/public/events/2019/09/knitr.png){width=100px} ![](https://tidyverse.tidyverse.org/articles/tidyverse-logo.png){width=100px}![](https://plot.ly/static/img/logos/plotly-logomark.svg){width=100px}![](https://leafletjs.com/docs/images/logo.png){width=100px}
+
+If you need help with code, you can always reference the class slides, Google, the Datacamp tutorials, and other resources. If you have questions on the requirement of this assignment, email or [make an appointment](https://calendly.com/drdataking) with me.
+
+The assignment will be graded out of 100 points; point values are specified for each part below.
+
+## Goal of the assignment
+
+Throughout the assignment, you will build a model to predict quarterly revenue for Singaporean diversified retail companies.  To do so, the following steps will be taken:
+
+1. Loading data (provided for you on eLearn)
+2. Process the data into a usable form
+3. Run an initial model on a training sample
+4. Explore seasonality in the model using visualization
+5. Run a model incorporating seasonal factors on a training sample
+6. Look at accuracy on a testing sample
+7. Make a plot showcasing where the firms in the analysis were located
+8. Try a logistic model to examine if GSS poor 2016 performance was expected.
+
+# Part 1: Load data from eLearn (5 points)
+
+## Instructions
+
+All data needed for this homework is provided on eLearn.  There are two files you will need:
+
+@. Compustat_SG_retail_quarterly.csv
+- From Compustat - Capital IQ > Global > Fundamentals Quarterly
+@. SG_postal_codes.csv
+- Parsed from [Singapore Postal Codes, github/xkjyeah](https://github.com/xkjyeah/singapore-postal-codes)
+
+## Exercise 1
+
+Load in the data from eLearn. To do this, you can use the `read.csv()` function.[^2]  After you have loaded the data, print out a summary of the financial data using the `summary()` function, including revenue (`revtq`) and total assets (`atq`) only.[^3] Also output a list of the companies' name (`conm`) in the data.[^4]
+
+```{r exercise1, eval=FALSE}
+# Set eval=TRUE after writing your code
+# Place your code for Exercise 1 in this code block.
+
+# Store the financial data in a variable called df.
+
+
+# Store the postal code data in a variable called postal_codes
+
+
+# Output a summary of the financial data
+
+
+# Output a list of all companies in the data
+
+```
+
+# Part 2: Processing data (20 points)
+
+## Instructions
+
+First, we will need to import some needed packages -- `tidyverse` and `plotly`.
+
+<!--message=FALSE, warning=FALSE prevents a bunch of output from loading tidyverse-->
+```{r, message=FALSE, warning=FALSE}
+# If you get an error here -- install the packages first.
+library(tidyverse)
+library(plotly)
+```
+
+Next we will construct some needed measures.  For this assignment, we will work using first differences, i.e., $revenue_t - revenue_{t-1}$. We will need to construct the first difference between the current quarter and the next, as well as the four differences prior. We will also compare revenue by quarter, and thus calculating the lag of revenue will be useful.  Thus, we will construct the following six measures:
+
+- `revtq_lag` = last quarter revenue
+- `diff_lead` = next quarter revenue - current quarter revenue
+- `diff1` = current quarter revenue - last quarter revenue
+- `diff2` = last quarter revenue - 2 quarters ago revenue
+- `diff3` = 2 quarters ago revenue - 3 quarters ago revenue
+- `diff4` = 3 quarters ago revenue - 4 quarters ago revenue
+
+Also useful will be actual year and quarter for the data, as most retailers do not have calendar aligned fiscal years in Singapore. This has been coded for you.
+
+Then, plot out current revenue vs last quarter revenue such that we can easily distinguish colors by quarter. What insights do we see from the graph?
+
+## Exercise 2
+
+Construct the 6 measures specified above.[^5]
+
+```{r exercise2.1, warning=FALSE, eval=FALSE}
+# Set eval=TRUE after writing your code
+# Place your code for Exercise 2 in this code block
+
+# Construct the six measures listed in the instructions, storing them in the
+# specified names.  Make sure to add these into df.
+# Use 'gvkey' as the unique company identifier
+
+
+
+# Other useful measures: actual year and quarter -- these are done for you
+df$year <- as.numeric(substr(df$datacqtr, 1, 4))
+df$qtr <- as.numeric(substr(df$datacqtr, 6, 6))
+
+```
+
+Next, make a plot of lagged revenue (on the x-axis) vs revenue (on the y-axis) with regression lines.[^6] Color the points based on the *fiscal* quarter (`fqtr`) they are coming from.[^7]
+
+```{r exercise2.2, message=FALSE, warning=FALSE, eval=FALSE}
+# Set eval=TRUE after writing your code
+# Place your code for Exercise 2 in this code block
+
+# Make a scatterplot using ggplot and store in plot.
+# Feel free to add a regression line or try other formatting
+
+plot <- df %>%
+  ggplot(aes(y=, x=, color=)) +
+  geom_point()
+
+#Make the plot interactive
+ggplotly(plot)  # No need to change this line
+```
+
+Next, make the same plot as before, but color the points based on the *actual* quarter (`qtr`) they are coming from.[^8]
+
+```{r exercise2.3, message=FALSE, eval=FALSE}
+# Set eval=TRUE after writing your code
+# Place your code for Exercise 2 in this code block
+
+# Make a scatterplot using ggplot and store in plot.
+plot <- df %>%
+  ggplot(aes(y=, x=, color=)) +
+  geom_point()
+
+#Make the plot interactive
+ggplotly(plot)  # No need to change this line
+```
+
+What insights do we see from the graphs?
+
+<!-- Write your explanation below this line -->
+_Explanation_: 
+
+
+# Part 3: Initial model (10 points)
+
+## Instructions
+
+Next, let's split our data into training and testing data.  We will save 2016 onward for testing later.
+
+Now, we'll build an initial model for predicting `diff_lead`. Build a linear model that regresses `diff_lead` on `diff1`, and save that model to an object called `model1`.  Then, output information about the model using `summary()`. Then explain the following: 1) how well does the model work, and 2) how do we interpret the coefficient on `diff1`?
+
+## Exercise 3
+
+```{r exercise3, eval=FALSE}
+# Set eval=TRUE after writing your code
+# Place your code for Exercise 3 in this code block
+
+# Split data into training and test -- before actual year 2016 data will be
+# for training, the rest for testing.  Call the training data frame training,
+# and call the testing data frame testing
+training <- df %>% filter(year < 2016)
+testing <- df %>% filter(year >= 2016)
+
+# Run the linear model and store it in model1
+
+
+# Print out a summary of model1
+
+```
+
+<!-- Write your explanation below this line -->
+_Explanation_: 
+
+
+# Part 4: Visualizing the data (10 points)
+
+## Instructions
+
+Based on the initial model as well as the visualization from exercise 2, we may want to explore seasonality more in the data. For this section, you should propose a visualization that could help you to better understand the data and any potential seasonality in it.[^9]
+
+Then, explain the following:
+
+1. Why did you make the selected visualization?
+2. What do you learn from the visualization?
+
+## Exercise 4
+
+```{r exercise4, warning=FALSE, eval=FALSE}
+# Set eval=TRUE after writing your code
+# Place your code for Exercise 4 in this code block
+
+
+```
+
+<!-- Write your explanation below this line -->
+_Explanation_: 
+
+
+
+# Part 5: Incorporating seasonailty (20 points)
+
+## Instructions
+
+Based on your graphic in Part 4, propose the changes that you would make to the initial model from Exercise 3, using variables from the original data set or from the variables created in Exercise 2.  Write out your reasoning for the model, and include a null and alternative hypothesis.
+
+Once you have decided on your model, run an OLS regression to test the model.
+
+Interpret the result of the model.  And how well does the model perform?
+
+## Exercise 5
+
+<!-- Write your explanation below this line -->
+_Model reasoning_: 
+
+
+$H_0$: 
+
+$H_1$: 
+
+```{r exercise5, eval=FALSE}
+# Set eval=TRUE after writing your code
+# Place your code for Exercise 5 in this code block
+
+# Run your proposed model, and store it in model2
+
+
+# Print out the model
+
+```
+
+<!-- Write your explanation below this line -->
+_Interpretation_: 
+
+
+_Model performance_: 
+
+
+
+
+# Part 6: Out of sample accuracy (10 points)
+
+## Instructions
+
+Next, we will check how well the initial model and your model perform out of sample.  To check this, we will use RMSE.  The function for RMSE is given below:
+
+```{r precoded6, eval=TRUE}
+# Takes two vectors and returns the RMSE between the two
+rmse <- function(v1, v2) {
+  sqrt(mean((v1 - v2)^2, na.rm=T))
+}
+```
+
+Use `predict()` and the `rmse()` function to generate the RMSE for each model using the testing data frame. How would you interpret the performance of the models in relation to one another?
+
+## Exercise 6
+
+```{r exercise6, eval=FALSE}
+# Set eval=TRUE after writing your code
+# Place your code for Exercise 6 in this code block
+
+# Calculate model RMSEs -- fill in the predict function
+rmse(testing$diff_lead, predict(, ))
+rmse(testing$diff_lead, predict(, ))
+```
+
+<!-- Write your explanation below this line -->
+_Interpretation_: 
+
+
+# Part 7: Firm locations (10 points)
+
+## Instructions
+
+For this part, we will plot out where these seven retail firms are or were headquartered in Singapore, and include some basic financial information about them as well. To do this, you will need to merge in the `postal_codes` data into `df`.  You will either need to specify the key to match on,[^10] or change variable names to match each other, as postal code is stored as `addzip` in the Compustat data and as `POSTAL` in the postal code data.
+
+Then, print out an **interactive** map of the following:[^11]
+
+1. 1 marker (of any appropriate type) where each of the businesses are or were headquartered
+2. Each marker should, either on hover, click, or a mix of the two, display:
+- The name of the company
+- The years the company is in the data
+- The minimum and maximum quarterly revenue the company had during that period
+
+You are required to use `leaflet` to make the interactive map.[^12]  You can follow the syntax from the shipping delay case R practice Exercises 3 or 4.[^13] You are not advised to use `plotly` for this exercise as it may not show the Singapore map correctly.
+
+## Exercise 7
+
+```{r exercise7, warning=FALSE, eval=FALSE}
+# Set eval=TRUE after writing your code
+# Place your code for Exercise 7 in this code block
+
+# Make sure that POSTAL is numeric -- this are done for you
+postal_codes$POSTAL <- as.numeric(postal_codes$POSTAL)
+
+# Merge the data
+
+
+# load leaflet
+library(leaflet)
+
+# Process the data for your map -- fill in each function
+mapdata <- df_map %>%
+  group_by( ) %>%
+  mutate(start = ,
+         end = ,
+         highest_rev = ,
+         lowest_rev = ) %>%
+  slice( ) %>%
+  ungroup()
+
+# Make your map
+
+
+```
+
+# Part 8: Running a logistic model (15 points)
+
+## Instructions 8
+
+The Great Singapore Sale in 2016 was generally considered to have performed quite poorly[^14].  For this exercise, we will make the assumption that a successful GSS will lead to higher sales in Q2 than sales from the previous Q2.[^15]
+
+Let's run a simple model to see:
+
+1. If a model of revenue growth can predict GSS success, and
+2. If we would have predicted a poor GSS season for the retailers in our data in 2016.
+
+After that, you should interpret the model -- what does it say about the relationship between GSS success and past revenue growth?
+
+Lastly, complete the code chunk to produce the odds ratios and the probability of success for each company with 2016 Q2 data.  Interpret either the odds ratios or the probabilities. Based on your model, does it seem like GSS 2016 was expected to be bad from the beginning?
+
+## Exercise 8
+
+```{r exercise8.1, warning=FALSE, eval=FALSE}
+# Set eval=TRUE after writing your code
+# Place your code for Exercise 8 in this code block
+
+# Create the GSS_Success measure and growth measures by company
+# These are done for you
+df <- df %>%
+  group_by(gvkey) %>%
+  mutate(GSS_success=ifelse(revtq > lag(revtq, 4), 1, 0),
+         growth1 = (lag(revtq) - lag(revtq, 2))/lag(revtq, 2),
+         growth2 = (lag(revtq, 2) - lag(revtq, 3))/lag(revtq, 3),
+         growth3 = (lag(revtq, 3) - lag(revtq, 4))/lag(revtq, 4),
+         growth4 = (lag(revtq, 4) - lag(revtq, 5))/lag(revtq, 5)) %>%
+  ungroup()
+df[df$qtr != 2, ]$GSS_success = NA
+
+# Split into training and testing data -- these are done for you
+training = df %>% filter(year < 2016)
+testing = df %>% filter(year == 2016, qtr == 2)
+
+# Run a logistic model using glm() of GSS_success on growth1 through growth4
+# using training data.  Make sure to set the family option
+fit <- glm( ~ , )
+
+# Output a summary of the model
+summary(fit)
+```
+
+<!-- Write your explanation below this line -->
+_Explanation of the model_: 
+
+
+
+```{r exercise8.2, warning=FALSE, eval=FALSE}
+# Set eval=TRUE after writing your code
+# It creates the odds and probabilities of success by firm,
+# as well as a baseline from the training data
+
+# Create the predicted log(odds) for the testing data and assign to logodds variable:
+
+
+# Convert to odds, this has been done for you
+odds = exp(logodds)
+names(odds) <- testing$conm
+
+# Convert to probability and assign to variable probability
+
+
+# Name the probability by company name, this has been done for you
+names(probability) <- testing$conm
+
+# Baseline probability: the probability of GSS success in the training data
+# This has been done for you
+baseline <- sum(training$GSS_success, na.rm=T) /
+  sum(!is.na(training$GSS_success))
+names(baseline) <- "Baseline"
+
+# Compute baseline odds and assign to variable baseline_odds
+
+
+# Print out odds and probabilities
+# This has been done for you
+print("Odds")
+c(baseline_odds, odds)
+
+print("Probabilities")
+c(baseline, probability)
+```
+
+<!-- Write your explanation below this line -->
+_Explanation of 2016 expectation_: 
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- Hints all stored below here -- no need to change any -->
+
+[^1]: This is an example of a margin note.  The list of notes are all at the bottom of the R Markdown file.
+[^2]: If you are using older version of R (older than 4.0 such as 3.6.x), make sure to specify `stringsAsFactors = FALSE` -- otherwise you may have a tough time merging data. Since R4.0.0, `stringsAsFactors = FALSE` has been a default option.
+[^3]: Some possible ways to do this: indexing with `[,]`, using `subset()`, using `filter()` from the `dplyr` package.
+[^4]: Use either `unique()` or `table()` to do this -- look up these functions either online or in R's help using `?`.
+[^5]: You should use `mutate()` and `group_by()` for these measures.  To identify specific companies, you should use the most popular unique company identifier `gvkey`.
+[^6]: The library `ggplot2` was already loaded when we loaded `tidyverse` earlier.  Use the function `ggplot()` along with the function `geom_point()` to make your scatterplot.  Here is a [reference for scatterplots](https://www3.nd.edu/~steve/computing_with_data/11_geom_examples/ggplot_examples.html).
+[^7]: Fiscal quarter is given by `fqtr` in the data.  You can set the color by passing `factor()` of a variable to the `color=` aesthetic in ggplot2.
+[^8]: Actual quarter is given by `qtr`.
+[^9]: You can use any tool in R that you would like to. We have mostly used `ggplot2` for this in class, along with passing the `ggplot2` plots to `ggplotly()`
+[^10]: You can specify matching on different names across the data by specifying the following option: `by = c("left_var" =  "right_var")`
+[^11]: Specifying `na.rm = TRUE` may be helpful if using `min()` and `max()`, so as to tell them to ignore missing data.  Also, note that to take the first observation within a group, you can use `group_by()` to group, and then pipe into `slice(1)` to extract just the first row of a group, then pipe into `ungroup()`.
+[^12]: You can also use `ggplot2` paired with `sf`, `maps`, `maptools`, and `rgeos`, passing the result to `ggplotly()` from `plotly`.  This requires a lot more setup, however, and may require installing other software outside of R if you are not on Windows.
+[^13]: You may have noticed that both `plotly` and `leaflet` use `~` in front of variables. This tells it to use the data specified to `data =` for any variables following the `~`.  Thus, you can pass expressions like `~lat` in place of `mapdata$lat`.  You can also use functions, like `~paste(conm, "<br>Latitude:", lat, "<br>Longitude:", lon)`.
+[^14]: See [this Straits Times coverage](https://www.straitstimes.com/singapore/great-spore-sale-not-so-great-any-more).
+[^15]: This doesn't cover the whole of GSS, but does cover the first month. The GSS typically lasted 10 weeks from June.
+
+<!-- The javascript below is for instructor's usage, please don't change any -->
+
+<script type="text/javascript">
+var styleNode = document.createElement('style');
+styleNode.type = "text/css";
+// browser detection (based on prototype.js)
+if(!!(window.attachEvent && !window.opera)) {
+styleNode.styleSheet.cssText = 'prof { color: rgb(158, 0, 64); }';
+} else {
+var styleText = document.createTextNode('prof { color: rgb(158, 0, 64); } ');
+styleNode.appendChild(styleText);
+}
+document.getElementsByTagName('head')[0].appendChild(styleNode);
+</script>
